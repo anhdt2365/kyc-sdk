@@ -26,4 +26,33 @@ export class PDA {
             bump: bump,
         };
     };
+
+    user_config = (user: anchor.web3.PublicKey): PDAInfo => {
+        const [pda, bump] = anchor.web3.PublicKey.findProgramAddressSync(
+            [
+                anchor.utils.bytes.utf8.encode(USER_CONFIG_SEED),
+                user.toBuffer(),
+            ],
+            this.programId
+        );
+        return {
+            key: pda,
+            bump: bump,
+        };
+    };
+
+    user_kyc = (user_config_account: anchor.web3.PublicKey, prev_kyc_account: anchor.web3.PublicKey): PDAInfo => {
+        const [pda, bump] = anchor.web3.PublicKey.findProgramAddressSync(
+            [
+                anchor.utils.bytes.utf8.encode(KYC_SEED),
+                user_config_account.toBuffer(),
+                prev_kyc_account.toBuffer(),
+            ],
+            this.programId
+        );
+        return {
+            key: pda,
+            bump: bump,
+        };
+    };
 }

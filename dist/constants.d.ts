@@ -1,0 +1,3 @@
+export declare const KYC_PROGRAM_ID_TESTNET = "DKS4RNuTQheBr2AdRQCYVKPKQk4nyY19jmp3dB6UH3Wf";
+export declare const KYC_PROGRAM_ID_MAINNET = "";
+export declare const KYC_PROGRAM_ID_LOCALHOST = "DKS4RNuTQheBr2AdRQCYVKPKQk4nyY19jmp3dB6UH3Wf";

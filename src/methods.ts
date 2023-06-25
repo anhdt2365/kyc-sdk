@@ -26,6 +26,16 @@ export class Methods {
         return this;
     }
 
+    public async submitKyc(params: ixs.SubmitKycParams) {
+        this.ix = await ixs.submitKyc(this.ctx.program, params);
+        return this;
+    }
+
+    public async updateKyc(params: ixs.UpdateKycParams) {
+        this.ix = await ixs.updateKyc(this.ctx.program, params);
+        return this;
+    }
+
     public toTx(): TransactionBuilder {
         const tx = new TransactionBuilder(this.ctx.provider.connection, this.ctx.provider.wallet);
         return this.ix ? tx.addInstruction(this.ix) : tx;
