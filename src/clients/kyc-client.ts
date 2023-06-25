@@ -1,7 +1,7 @@
 import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { TransactionBuilder } from "@orca-so/common-sdk";
 import { Context, PDA, stringToBytes32, dateToNumberArray } from "..";
-import { ProviderConfigData, UserConfigData, UserKycData } from "../types";
+import { IsKycData, ProviderConfigData, UserConfigData, UserKycData } from "../types";
 
 export class KycClient {
     ctx: Context;
@@ -217,16 +217,24 @@ export class KycClient {
 
     public async isKyc(
         user: PublicKey,
-    ): Promise<boolean> {
+    ): Promise<IsKycData> {
         const pda = new PDA(this.ctx.program.programId);
         const userConfig = pda.user_config(user);
 
         const userConfigData = await this.ctx.fetcher.getUserConfig(userConfig.key, true);
         if (!userConfigData) {
-            return false;
+            return {
+                isKyc: false,
+                kycLevel: null,
+                isExpired: null,
+            };
         }
 
         const userKycData = await this.getOneUserKyc(userConfigData.latestKycAccount);
-        return !userKycData.isExpired;
+        return {
+            isKyc: true,
+            kycLevel: userConfigData.kycLevel,
+            isExpired: userKycData.isExpired,
+        };
     }
 }

@@ -43,3 +43,9 @@ export type UserKycData = {
     prevKycAccount: PublicKey;
     bump: number[];
 };
+
+export type IsKycData = {
+    isKyc: boolean;
+    kycLevel: number | null;
+    isExpired: boolean | null;
+}
