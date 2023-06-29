@@ -1,6 +1,6 @@
 import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { TransactionBuilder } from "@orca-so/common-sdk";
-import { Context, PDA, stringToBytes32, dateToNumberArray } from "..";
+import { Context, PDA, validateKycParams, Gender } from "..";
 import { IsKycData, ProviderConfigData, UserConfigData, UserKycData } from "../types";
 
 export class KycClient {
@@ -63,12 +63,10 @@ export class KycClient {
     }
 
     public async deactivateUser(
-        ctx: Context,
         authority: PublicKey,
         user: PublicKey,
     ): Promise<TransactionBuilder> {
-        const pda = new PDA(ctx.program.programId);
-        const userConfig = pda.user_config(user);
+        const userConfig = this.pda.user_config(user);
 
         const tx = (
             await this.ctx.methods.deactivateUser({
@@ -92,12 +90,20 @@ export class KycClient {
         country: string,
         dob: Date,
         doe: Date | null,
-        gender: string | null,
+        gender: Gender | null,
         isExpired: boolean,
     ): Promise<TransactionBuilder> {
         const providerConfig = this.pda.provider_config(provider);
         const userConfig = this.pda.user_config(user);
         const userKyc = this.pda.user_kyc(userConfig.key, SystemProgram.programId);
+        const validatedParams = validateKycParams(
+            name,
+            documentId,
+            country,
+            dob,
+            doe,
+            gender
+        );
 
         const tx = (
             await this.ctx.methods.submitKyc({
@@ -110,12 +116,12 @@ export class KycClient {
                 inputs: {
                     user,
                     kycLevel,
-                    name: stringToBytes32(name),
-                    documentId: stringToBytes32(documentId),
-                    country: stringToBytes32(country),
-                    dob: dateToNumberArray(dob),
-                    doe: dateToNumberArray(doe),
-                    gender: stringToBytes32(gender),
+                    name: validatedParams.encodedName,
+                    documentId: validatedParams.encodedDocumentId,
+                    country: validatedParams.encodedCountry,
+                    dob: validatedParams.encodedDob,
+                    doe: validatedParams.encodedDoe,
+                    gender: validatedParams.encodedGender,
                     isExpired,
                 },
             })
@@ -132,13 +138,21 @@ export class KycClient {
         country: string,
         dob: Date,
         doe: Date | null,
-        gender: string | null,
+        gender: Gender | null,
         isExpired: boolean,
     ): Promise<TransactionBuilder> {
         const providerConfig = this.pda.provider_config(provider);
         const userConfig = this.pda.user_config(user);
         const userConfigData = await this.ctx.program.account.userConfig.fetch(userConfig.key);
         const newUserKyc = this.pda.user_kyc(userConfig.key, userConfigData.latestKycAccount);
+        const validatedParams = validateKycParams(
+            name,
+            documentId,
+            country,
+            dob,
+            doe,
+            gender
+        );
 
         const tx = (
             await this.ctx.methods.updateKyc({
@@ -150,12 +164,12 @@ export class KycClient {
                     newUserKycAccount: newUserKyc.key,
                 },
                 inputs: {
-                    name: stringToBytes32(name),
-                    documentId: stringToBytes32(documentId),
-                    country: stringToBytes32(country),
-                    dob: dateToNumberArray(dob),
-                    doe: dateToNumberArray(doe),
-                    gender: stringToBytes32(gender),
+                    name: validatedParams.encodedName,
+                    documentId: validatedParams.encodedDocumentId,
+                    country: validatedParams.encodedCountry,
+                    dob: validatedParams.encodedDob,
+                    doe: validatedParams.encodedDoe,
+                    gender: validatedParams.encodedGender,
                     isExpired,
                 },
             })

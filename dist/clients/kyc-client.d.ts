@@ -1,7 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 import { TransactionBuilder } from "@orca-so/common-sdk";
 import { Context, PDA } from "..";
-import { ProviderConfigData, UserConfigData, UserKycData } from "../types";
+import { IsKycData, ProviderConfigData, UserConfigData, UserKycData } from "../types";
 export declare class KycClient {
     ctx: Context;
     pda: PDA;
@@ -16,5 +16,5 @@ export declare class KycClient {
     getUserConfig(user: PublicKey): Promise<UserConfigData>;
     getCurrentUserKyc(user: PublicKey): Promise<UserKycData>;
     getOneUserKyc(userKyc: PublicKey): Promise<UserKycData>;
-    isKyc(user: PublicKey): Promise<boolean>;
+    isKyc(user: PublicKey): Promise<IsKycData>;
 }

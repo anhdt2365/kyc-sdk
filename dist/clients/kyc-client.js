@@ -167,10 +167,18 @@ class KycClient {
             const userConfig = pda.user_config(user);
             const userConfigData = yield this.ctx.fetcher.getUserConfig(userConfig.key, true);
             if (!userConfigData) {
-                return false;
+                return {
+                    isKyc: false,
+                    kycLevel: null,
+                    isExpired: null,
+                };
             }
             const userKycData = yield this.getOneUserKyc(userConfigData.latestKycAccount);
-            return !userKycData.isExpired;
+            return {
+                isKyc: true,
+                kycLevel: userConfigData.kycLevel,
+                isExpired: userKycData.isExpired,
+            };
         });
     }
 }

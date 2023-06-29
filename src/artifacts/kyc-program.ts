@@ -275,7 +275,7 @@ export type KycProgram = {
                 },
                 {
                     "name": "userConfig",
-                    "isMut": false,
+                    "isMut": true,
                     "isSigner": false
                 },
                 {
@@ -761,7 +761,7 @@ export const IDL: KycProgram = {
                 },
                 {
                     "name": "userConfig",
-                    "isMut": false,
+                    "isMut": true,
                     "isSigner": false
                 },
                 {

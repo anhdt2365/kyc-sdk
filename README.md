@@ -189,7 +189,7 @@ import {
   Commitment,
 } from "@solana/web3.js";
 import { AnchorProvider, Wallet } from "@project-serum/anchor";
-import { Context, KycClient, KYC_PROGRAM_ID_TESTNET } from "@renec-foundation/kyc-sdk";
+import { Context, KycClient, KYC_PROGRAM_ID_TESTNET, Gender } from "@renec-foundation/kyc-sdk";
 
 
 ...
@@ -210,7 +210,7 @@ const documentId = "9899998923321";
 const country = "us";
 const dob = new Date("2019-01-16");
 const doe = null;
-const gender = "male";
+const gender = Gender.Male;
 const isExpired = false;
 
 const tx = await kycClient.update(
