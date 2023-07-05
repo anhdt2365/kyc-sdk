@@ -107,6 +107,22 @@ console.log("userConfigData", userConfigData);
 
 const userKycData = await kycClient.getCurrentUserKyc(providerPubkey);
 console.log("userKycData", userKycData);
+
+// Transfer reID Token
+await kycClient.transferKycToken(user.publicKey, mint);
+
+// Check reID balance
+let providerTokenAccountInfo = await getAccount(
+    connection,
+    providerTokenAccount.address
+);
+console.log(providerTokenAccountInfo.amount.toString());
+let userTokenAccountInfo = await getAccount(
+    connection,
+    userTokenAccount.address
+);
+console.log(userTokenAccountInfo.amount.toString());
+
 ```
 
 + Output
