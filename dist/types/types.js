@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AccountName = exports.accountsCoder = exports.KycProgramIDL = void 0;
+exports.Gender = exports.AccountName = exports.accountsCoder = exports.KycProgramIDL = void 0;
 const anchor_1 = require("@project-serum/anchor");
 const IDL = __importStar(require("../artifacts/kyc-program.json"));
 exports.KycProgramIDL = IDL;
@@ -34,3 +34,8 @@ var AccountName;
     AccountName["UserConfig"] = "userConfig";
     AccountName["UserKyc"] = "userKyc";
 })(AccountName = exports.AccountName || (exports.AccountName = {}));
+var Gender;
+(function (Gender) {
+    Gender["Male"] = "male";
+    Gender["Female"] = "female";
+})(Gender = exports.Gender || (exports.Gender = {}));

@@ -47,6 +47,7 @@ export type UserKycData = {
     timestamp: BN;
     prevKycAccount: PublicKey;
     bump: number[];
+    provider: string;
 };
 
 export type ValidateKycData = {

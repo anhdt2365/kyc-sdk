@@ -11,6 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.KycClient = void 0;
 const web3_js_1 = require("@solana/web3.js");
+const spl_token_1 = require("spl-token");
 const __1 = require("..");
 class KycClient {
     constructor(ctx, pda) {
@@ -51,10 +52,9 @@ class KycClient {
             return tx;
         });
     }
-    deactivateUser(ctx, authority, user) {
+    deactivateUser(authority, user) {
         return __awaiter(this, void 0, void 0, function* () {
-            const pda = new __1.PDA(ctx.program.programId);
-            const userConfig = pda.user_config(user);
+            const userConfig = this.pda.user_config(user);
             const tx = (yield this.ctx.methods.deactivateUser({
                 accounts: {
                     authority,
@@ -68,8 +68,13 @@ class KycClient {
     submitKyc(provider, user, kycLevel, name, documentId, country, dob, doe, gender, isExpired) {
         return __awaiter(this, void 0, void 0, function* () {
             const providerConfig = this.pda.provider_config(provider);
+            const _isKyc = yield this.isKyc(user);
+            if (_isKyc.isKyc) {
+                throw Error("User is already have KYC");
+            }
             const userConfig = this.pda.user_config(user);
             const userKyc = this.pda.user_kyc(userConfig.key, web3_js_1.SystemProgram.programId);
+            const validatedParams = (0, __1.validateKycParams)(name, documentId, country, dob, doe, gender);
             const tx = (yield this.ctx.methods.submitKyc({
                 accounts: {
                     authority: provider,
@@ -80,12 +85,12 @@ class KycClient {
                 inputs: {
                     user,
                     kycLevel,
-                    name: (0, __1.stringToBytes32)(name),
-                    documentId: (0, __1.stringToBytes32)(documentId),
-                    country: (0, __1.stringToBytes32)(country),
-                    dob: (0, __1.dateToNumberArray)(dob),
-                    doe: (0, __1.dateToNumberArray)(doe),
-                    gender: (0, __1.stringToBytes32)(gender),
+                    name: validatedParams.encodedName,
+                    documentId: validatedParams.encodedDocumentId,
+                    country: validatedParams.encodedCountry,
+                    dob: validatedParams.encodedDob,
+                    doe: validatedParams.encodedDoe,
+                    gender: validatedParams.encodedGender,
                     isExpired,
                 },
             })).toTx();
@@ -98,6 +103,7 @@ class KycClient {
             const userConfig = this.pda.user_config(user);
             const userConfigData = yield this.ctx.program.account.userConfig.fetch(userConfig.key);
             const newUserKyc = this.pda.user_kyc(userConfig.key, userConfigData.latestKycAccount);
+            const validatedParams = (0, __1.validateKycParams)(name, documentId, country, dob, doe, gender);
             const tx = (yield this.ctx.methods.updateKyc({
                 accounts: {
                     authority: provider,
@@ -107,16 +113,35 @@ class KycClient {
                     newUserKycAccount: newUserKyc.key,
                 },
                 inputs: {
-                    name: (0, __1.stringToBytes32)(name),
-                    documentId: (0, __1.stringToBytes32)(documentId),
-                    country: (0, __1.stringToBytes32)(country),
-                    dob: (0, __1.dateToNumberArray)(dob),
-                    doe: (0, __1.dateToNumberArray)(doe),
-                    gender: (0, __1.stringToBytes32)(gender),
+                    name: validatedParams.encodedName,
+                    documentId: validatedParams.encodedDocumentId,
+                    country: validatedParams.encodedCountry,
+                    dob: validatedParams.encodedDob,
+                    doe: validatedParams.encodedDoe,
+                    gender: validatedParams.encodedGender,
                     isExpired,
                 },
             })).toTx();
             return tx;
+        });
+    }
+    transferKycToken(user, mint) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // Get provider token account
+            const providerTokenAccount = yield this.ctx.connection.getTokenAccountsByOwner(this.ctx.wallet.publicKey, {
+                mint,
+            });
+            // Get user token account
+            const userTokenAccount = yield this.ctx.connection.getTokenAccountsByOwner(user, {
+                mint,
+            });
+            let tx = new web3_js_1.Transaction();
+            tx.add((0, spl_token_1.createTransferInstruction)(providerTokenAccount.value[0].pubkey, userTokenAccount.value[0].pubkey, this.ctx.wallet.publicKey, web3_js_1.LAMPORTS_PER_SOL));
+            const latestBlockHash = yield this.ctx.connection.getLatestBlockhash('confirmed');
+            tx.recentBlockhash = latestBlockHash.blockhash;
+            tx.feePayer = this.ctx.wallet.publicKey;
+            tx = yield this.ctx.wallet.signTransaction(tx);
+            return yield this.ctx.provider.sendAndConfirm(tx);
         });
     }
     getProviderConfig(provider) {
@@ -141,6 +166,15 @@ class KycClient {
             return userConfigData;
         });
     }
+    getOneUserConfig(userConfig) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const userConfigData = yield this.ctx.fetcher.getUserConfig(userConfig, true);
+            if (!userConfigData) {
+                throw new Error(`User Config ${userConfig} not found`);
+            }
+            return userConfigData;
+        });
+    }
     getCurrentUserKyc(user) {
         return __awaiter(this, void 0, void 0, function* () {
             const pda = new __1.PDA(this.ctx.program.programId);
@@ -157,6 +191,13 @@ class KycClient {
             const userKycData = yield this.ctx.fetcher.getOneUserKyc(userKyc, true);
             if (!userKycData) {
                 throw new Error(`User Kyc ${userKyc} not found`);
+            }
+            const userConfigData = yield this.getOneUserConfig(userKycData.userConfigAccount);
+            if (userConfigData.provider.toBase58() === __1.RENEC_PROVIDER_TESTNET) {
+                userKycData.provider = "RENEC blockchain";
+            }
+            else {
+                userKycData.provider = userConfigData.provider.toBase58();
             }
             return userKycData;
         });

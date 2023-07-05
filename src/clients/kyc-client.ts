@@ -1,6 +1,7 @@
-import { PublicKey, SystemProgram } from "@solana/web3.js";
+import { PublicKey, SystemProgram, LAMPORTS_PER_SOL, Transaction } from "@solana/web3.js";
 import { TransactionBuilder } from "@orca-so/common-sdk";
-import { Context, PDA, validateKycParams, Gender } from "..";
+import { createTransferInstruction } from "spl-token";
+import { Context, PDA, validateKycParams, Gender, RENEC_PROVIDER_TESTNET, REID_MINT_TESTNET } from "..";
 import { IsKycData, ProviderConfigData, UserConfigData, UserKycData } from "../types";
 
 export class KycClient {
@@ -94,6 +95,10 @@ export class KycClient {
         isExpired: boolean,
     ): Promise<TransactionBuilder> {
         const providerConfig = this.pda.provider_config(provider);
+        const _isKyc = await this.isKyc(user);
+        if (_isKyc.isKyc) {
+            throw Error("User is already have KYC");
+        }
         const userConfig = this.pda.user_config(user);
         const userKyc = this.pda.user_kyc(userConfig.key, SystemProgram.programId);
         const validatedParams = validateKycParams(
@@ -178,6 +183,41 @@ export class KycClient {
         return tx;
     }
 
+    public async transferKycToken(
+        user: PublicKey,
+        mint: PublicKey,
+    ): Promise<string> {
+        // Get provider token account
+        const providerTokenAccount = await this.ctx.connection.getTokenAccountsByOwner(
+            this.ctx.wallet.publicKey,
+            {
+                mint,
+            }
+        );
+
+        // Get user token account
+        const userTokenAccount = await this.ctx.connection.getTokenAccountsByOwner(
+            user,
+            {
+                mint,
+            }
+        );
+
+        let tx = new Transaction();
+        tx.add(createTransferInstruction(
+            providerTokenAccount.value[0].pubkey,
+            userTokenAccount.value[0].pubkey,
+            this.ctx.wallet.publicKey,
+            LAMPORTS_PER_SOL
+        ))
+        const latestBlockHash = await this.ctx.connection.getLatestBlockhash('confirmed');
+        tx.recentBlockhash = latestBlockHash.blockhash;
+        tx.feePayer = this.ctx.wallet.publicKey;
+        tx = await this.ctx.wallet.signTransaction(tx);
+
+        return await this.ctx.provider.sendAndConfirm(tx);
+    }
+
     public async getProviderConfig(
         provider: PublicKey,
     ): Promise<ProviderConfigData> {
@@ -204,6 +244,16 @@ export class KycClient {
         return userConfigData;
     }
 
+    public async getOneUserConfig(
+        userConfig: PublicKey,
+    ): Promise<UserConfigData> {
+        const userConfigData = await this.ctx.fetcher.getUserConfig(userConfig, true);
+        if (!userConfigData) {
+            throw new Error(`User Config ${userConfig} not found`);
+        }
+        return userConfigData;
+    }
+
     public async getCurrentUserKyc(
         user: PublicKey,
     ): Promise<UserKycData> {
@@ -224,6 +274,13 @@ export class KycClient {
         const userKycData = await this.ctx.fetcher.getOneUserKyc(userKyc, true);
         if (!userKycData) {
             throw new Error(`User Kyc ${userKyc} not found`);
+        }
+
+        const userConfigData = await this.getOneUserConfig(userKycData.userConfigAccount);
+        if (userConfigData.provider.toBase58() === RENEC_PROVIDER_TESTNET) {
+            userKycData.provider = "RENEC blockchain"
+        } else {
+            userKycData.provider = userConfigData.provider.toBase58();
         }
 
         return userKycData;

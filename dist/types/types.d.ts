@@ -9,6 +9,10 @@ export declare enum AccountName {
     UserConfig = "userConfig",
     UserKyc = "userKyc"
 }
+export declare enum Gender {
+    Male = "male",
+    Female = "female"
+}
 export declare type ProviderConfigData = {
     provider: PublicKey;
     deactivate: boolean;
@@ -36,6 +40,15 @@ export declare type UserKycData = {
     timestamp: BN;
     prevKycAccount: PublicKey;
     bump: number[];
+    provider: string;
+};
+export declare type ValidateKycData = {
+    encodedName: number[];
+    encodedDocumentId: number[];
+    encodedCountry: number[];
+    encodedDob: number[];
+    encodedDoe: number[];
+    encodedGender: number[];
 };
 export declare type IsKycData = {
     isKyc: boolean;

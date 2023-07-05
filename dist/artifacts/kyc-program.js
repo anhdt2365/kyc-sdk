@@ -278,7 +278,7 @@ exports.IDL = {
                 },
                 {
                     "name": "userConfig",
-                    "isMut": false,
+                    "isMut": true,
                     "isSigner": false
                 },
                 {

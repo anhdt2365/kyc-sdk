@@ -275,7 +275,7 @@ export declare type KycProgram = {
                 },
                 {
                     "name": "userConfig";
-                    "isMut": false;
+                    "isMut": true;
                     "isSigner": false;
                 },
                 {
